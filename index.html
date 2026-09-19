@@ -1,0 +1,2948 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flag Battle — Global Arrow Arena</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #04050b;
+      --bg-1: #0b1020;
+      --text: #ecf2ff;
+      --text-dim: #93a6cf;
+      --panel: rgba(10, 16, 31, 0.84);
+      --border: rgba(142, 166, 224, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 18%, #18284f 0%, #070a13 55%, #020307 100%);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    #app {
+      width: min(100vw, calc(100vh * 9 / 16));
+      height: min(100vh, calc(100vw * 16 / 9));
+      margin: auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(4px, 0.7vw, 7px);
+      padding: clamp(8px, 1.2vw, 14px);
+    }
+
+    #topHud {
+      background: linear-gradient(145deg, rgba(19, 30, 58, 0.87), rgba(9, 13, 24, 0.92));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: inset 0 0 16px rgba(85, 128, 228, 0.12), 0 0 24px rgba(0, 0, 0, 0.34);
+      padding: clamp(10px, 1.4vw, 14px) clamp(11px, 1.6vw, 16px);
+      display: grid;
+      gap: 7px;
+    }
+
+    .hud-title {
+      margin: 0;
+      font-size: clamp(26px, 4.3vw, 39px);
+      letter-spacing: 0.1em;
+      line-height: 1;
+      font-weight: 850;
+      text-shadow: 0 0 14px rgba(87, 208, 255, 0.3);
+      text-align: center;
+    }
+
+    .hud-meta {
+      display: grid;
+      grid-template-columns: minmax(80px, 96px) 1fr minmax(80px, 96px);
+      align-items: center;
+      gap: clamp(8px, 1.2vw, 16px);
+      min-height: 0;
+    }
+
+    .meta-block {
+      display: grid;
+      justify-items: center;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .label {
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+
+    #lastWinnerFlag {
+      font-size: clamp(26px, 3.8vw, 40px);
+      line-height: 1;
+      min-height: 1em;
+    }
+
+    #roundLabel {
+      font-size: clamp(18px, 2.8vw, 30px);
+      line-height: 1;
+      font-weight: 860;
+      color: #e7f4ff;
+      text-shadow: 0 0 10px rgba(87, 208, 255, 0.28);
+      min-height: 1em;
+    }
+
+    .center-meta {
+      min-width: 0;
+      text-align: center;
+    }
+
+    #tagline {
+      color: #d8e4ff;
+      font-size: clamp(11px, 1.7vw, 15px);
+      letter-spacing: 0.08em;
+      font-weight: 640;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #aliveLabel {
+      margin-top: 4px;
+      color: #e4f4ff;
+      text-shadow: 0 0 8px rgba(87, 208, 255, 0.23);
+      font-size: clamp(15px, 2.1vw, 21px);
+      letter-spacing: 0.06em;
+      font-weight: 820;
+    }
+
+    #arenaPane {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      justify-self: center;
+      align-self: center;
+      min-height: 0;
+      border-radius: 18px;
+      border: 1px solid rgba(112, 138, 198, 0.32);
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 25%, rgba(21, 32, 60, 0.86), rgba(8, 11, 21, 0.95));
+      box-shadow: inset 0 0 30px rgba(71, 115, 223, 0.14), 0 10px 28px rgba(0, 0, 0, 0.34);
+    }
+
+    #battleCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #eventToast {
+      position: absolute;
+      top: clamp(12px, 2.2vw, 20px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-12px);
+      border-radius: 11px;
+      border: 1px solid rgba(255, 172, 80, 0.55);
+      background: linear-gradient(145deg, rgba(62, 29, 14, 0.9), rgba(35, 14, 7, 0.9));
+      color: #ffe6c7;
+      padding: clamp(8px, 1.1vw, 12px) clamp(12px, 2.1vw, 18px);
+      font-size: clamp(12px, 1.8vw, 17px);
+      font-weight: 740;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 8;
+      text-align: center;
+      max-width: min(90%, 420px);
+    }
+
+    #eventToast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transition: opacity 0.24s ease;
+      z-index: 10;
+    }
+
+    .overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .card {
+      background: radial-gradient(circle at top, rgba(33, 49, 84, 0.84), rgba(10, 16, 31, 0.92) 78%);
+      border: 1px solid rgba(137, 170, 242, 0.34);
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), inset 0 0 22px rgba(87, 208, 255, 0.13);
+      padding: clamp(17px, 3.2vw, 29px);
+      width: min(88%, 500px);
+    }
+
+    #startOverlay h2 {
+      margin: 0;
+      font-size: clamp(32px, 5.6vw, 54px);
+      letter-spacing: 0.11em;
+      line-height: 1;
+      text-shadow: 0 0 18px rgba(87, 208, 255, 0.33);
+    }
+
+    #startOverlay p {
+      margin: 12px 0;
+      color: #cbdbff;
+      font-size: clamp(14px, 2.3vw, 22px);
+      font-weight: 650;
+      letter-spacing: 0.07em;
+    }
+
+    .btn {
+      border: 1px solid rgba(133, 157, 215, 0.42);
+      border-radius: 10px;
+      color: var(--text);
+      background: linear-gradient(145deg, rgba(34, 51, 84, 0.9), rgba(19, 26, 44, 0.9));
+      cursor: pointer;
+      font-size: clamp(11px, 1.6vw, 14px);
+      font-weight: 650;
+      letter-spacing: 0.03em;
+      padding: 8px 12px;
+      transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover {
+      border-color: rgba(124, 194, 255, 0.66);
+      box-shadow: 0 6px 18px rgba(80, 182, 255, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      min-width: 190px;
+      font-size: clamp(13px, 2.1vw, 18px);
+      border-color: rgba(124, 207, 255, 0.75);
+      background: linear-gradient(130deg, #1e4a98 0%, #2f3ca8 45%, #532ea3 100%);
+      padding: clamp(10px, 1.4vw, 14px) clamp(14px, 2.4vw, 24px);
+      box-shadow: 0 0 22px rgba(87, 208, 255, 0.25);
+      margin-top: 8px;
+    }
+
+    #countdownOverlay {
+      font-size: clamp(70px, 14vw, 145px);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: #f7fbff;
+      text-shadow: 0 0 24px rgba(87, 208, 255, 0.5), 0 0 58px rgba(152, 125, 255, 0.38);
+      pointer-events: none;
+      z-index: 9;
+    }
+
+    #countdownOverlay.animate {
+      animation: pop 0.72s cubic-bezier(0.12, 0.84, 0.21, 1);
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(0.4);
+        opacity: 0;
+      }
+      35% {
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.07);
+        opacity: 0;
+      }
+    }
+
+    #winnerOverlay .crown {
+      font-size: clamp(31px, 5vw, 48px);
+      font-weight: 840;
+      letter-spacing: 0.08em;
+      color: #ffdf93;
+      text-shadow: 0 0 18px rgba(255, 224, 147, 0.34);
+      margin-bottom: 8px;
+    }
+
+    #winnerFlag {
+      font-size: clamp(74px, 12vw, 140px);
+      line-height: 1;
+      margin: 8px 0;
+      filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.28));
+    }
+
+    #winnerName {
+      font-size: clamp(31px, 5.1vw, 56px);
+      font-weight: 860;
+      letter-spacing: 0.08em;
+      margin: 0;
+      text-shadow: 0 0 16px rgba(87, 208, 255, 0.34);
+    }
+
+    #winnerText {
+      margin: 8px 0 12px;
+      color: #e4ecff;
+      font-size: clamp(13px, 2vw, 19px);
+      letter-spacing: 0.1em;
+      font-weight: 630;
+    }
+
+    #statusArea {
+      min-height: 140px;
+      max-height: 220px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 9px 10px;
+      box-shadow: inset 0 0 14px rgba(75, 110, 193, 0.12);
+      min-height: 0;
+    }
+
+    #eliminatedFlags {
+      margin-top: 8px;
+      min-height: 36px;
+      max-height: 156px;
+      overflow: auto;
+      scrollbar-width: thin;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px 5px;
+      align-items: center;
+      align-content: flex-start;
+      font-size: clamp(14px, 2vw, 20px);
+      line-height: 1.05;
+      padding-right: 2px;
+    }
+
+    #eliminatedFlags span {
+      filter: drop-shadow(0 0 8px rgba(89, 170, 255, 0.15));
+    }
+
+    body.stream-mode #app {
+      padding: clamp(6px, 1vw, 10px);
+    }
+
+    body.stream-mode #startOverlay,
+    body.autostart-mode #startOverlay {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="topHud">
+      <h1 class="hud-title">FLAG BATTLE</h1>
+      <div class="hud-meta">
+        <div class="meta-block">
+          <div class="label">LAST WINNER</div>
+          <div id="lastWinnerFlag">—</div>
+        </div>
+        <div class="center-meta">
+          <div id="tagline">COUNTRIES • ONE WINNER</div>
+          <div id="aliveLabel">ALIVE: -- / --</div>
+        </div>
+        <div class="meta-block">
+          <div class="label">ROUND</div>
+          <div id="roundLabel">1</div>
+        </div>
+      </div>
+    </header>
+
+    <main id="arenaPane">
+      <canvas id="battleCanvas"></canvas>
+      <div id="eventToast"></div>
+
+      <div id="startOverlay" class="overlay">
+        <div class="card">
+          <h2>FLAG BATTLE</h2>
+          <p id="startCountriesLine">COUNTRIES</p>
+          <p>ONE WINNER</p>
+          <button id="startBtn" class="btn primary">START BATTLE</button>
+        </div>
+      </div>
+
+      <div id="countdownOverlay" class="overlay hidden"></div>
+
+      <div id="winnerOverlay" class="overlay hidden">
+        <div class="card">
+          <div class="crown">🏆 WINNER</div>
+          <div id="winnerFlag"></div>
+          <p id="winnerName"></p>
+          <p id="winnerText">WINS THE FLAG BATTLE</p>
+        </div>
+      </div>
+    </main>
+
+    <section id="statusArea">
+      <div class="panel">
+        <div class="label">ELIMINATED</div>
+        <div id="eliminatedFlags"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    "use strict";
+
+    const COUNTRY_CODES = [
+      "AF", "AL", "DZ", "AD", "AO", "AG", "AR", "AM", "AU", "AT", "AZ", "BS", "BH", "BD", "BB",
+      "BY", "BE", "BZ", "BJ", "BT", "BO", "BA", "BW", "BR", "BN", "BG", "BF", "BI", "CV", "KH",
+      "CM", "CA", "CF", "TD", "CL", "CN", "CO", "KM", "CG", "CD", "CR", "CI", "HR", "CU", "CY",
+      "CZ", "DK", "DJ", "DM", "DO", "EC", "EG", "SV", "GQ", "ER", "EE", "SZ", "ET", "FJ", "FI",
+      "FR", "GA", "GM", "GE", "DE", "GH", "GR", "GD", "GT", "GN", "GW", "GY", "HT", "HN", "HU",
+      "IS", "IN", "ID", "IR", "IQ", "IE", "IL", "IT", "JM", "JP", "JO", "KZ", "KE", "KI", "KP",
+      "KR", "KW", "KG", "LA", "LV", "LB", "LS", "LR", "LY", "LI", "LT", "LU", "MG", "MW", "MY",
+      "MV", "ML", "MT", "MH", "MR", "MU", "MX", "FM", "MD", "MC", "MN", "ME", "MA", "MZ", "MM",
+      "NA", "NR", "NP", "NL", "NZ", "NI", "NE", "NG", "MK", "NO", "OM", "PK", "PW", "PA", "PG",
+      "PY", "PE", "PH", "PL", "PT", "QA", "RO", "RU", "RW", "KN", "LC", "VC", "WS", "SM", "ST",
+      "SA", "SN", "RS", "SC", "SL", "SG", "SK", "SI", "SB", "SO", "ZA", "SS", "ES", "LK", "SD",
+      "SR", "SE", "CH", "SY", "TJ", "TZ", "TH", "TL", "TG", "TO", "TT", "TN", "TR", "TM", "TV",
+      "UG", "UA", "AE", "GB", "US", "UY", "UZ", "VU", "VE", "VN", "YE", "ZM", "ZW", "PS", "VA"
+    ];
+
+    const COUNTRY_NAME_OVERRIDES = {
+      PS: "Palestine",
+      VA: "Vatican City"
+    };
+
+    function codeToFlagEmoji(code) {
+      return code
+        .toUpperCase()
+        .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    }
+
+    function slugifyCountryName(name) {
+      return name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    function buildCountries() {
+      const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+      const usedIds = new Set();
+      return COUNTRY_CODES.map((code) => {
+        const displayName = COUNTRY_NAME_OVERRIDES[code] || regionNames.of(code) || code;
+        let id = slugifyCountryName(displayName);
+        if (usedIds.has(id)) {
+          id = `${id}-${code.toLowerCase()}`;
+        }
+        usedIds.add(id);
+        return {
+          id,
+          name: displayName,
+          flag: codeToFlagEmoji(code),
+          code
+        };
+      });
+    }
+
+    function validateCountries(countries) {
+      const issues = [];
+      const seenIds = new Set();
+      const seenNames = new Set();
+      for (const country of countries) {
+        if (!country.id || !country.name || !country.flag) {
+          issues.push(`Invalid country record: ${JSON.stringify(country)}`);
+          continue;
+        }
+        if (seenIds.has(country.id)) {
+          issues.push(`Duplicate id: ${country.id}`);
+        }
+        if (seenNames.has(country.name.toLowerCase())) {
+          issues.push(`Duplicate country name: ${country.name}`);
+        }
+        seenIds.add(country.id);
+        seenNames.add(country.name.toLowerCase());
+      }
+      if (countries.length !== 195) {
+        issues.push(`Expected 195 countries, got ${countries.length}`);
+      }
+      if (issues.length > 0) {
+        throw new Error(`Country validation failed:\n${issues.join("\n")}`);
+      }
+      console.log(`COUNTRIES LOADED: ${countries.length}`);
+    }
+
+    const COUNTRIES = buildCountries();
+    validateCountries(COUNTRIES);
+
+    const ROUND_CONFIG = {
+      autoNextRound: true,
+      winnerDisplayMs: 6000,
+      countdownEnabled: true,
+      countdownSeconds: 3
+    };
+
+    const HAZARD_CONFIG = {
+      firstHazardMinMs: 2200,
+      firstHazardMaxMs: 4000,
+      intervalMinMs: 1500,
+      intervalMaxMs: 3000,
+      warningMinMs: 520,
+      warningMaxMs: 800,
+      quickSpawnMinMs: 180,
+      quickSpawnMaxMs: 420,
+      arrowLengthMin: 155,
+      arrowLengthMax: 220,
+      arrowWidthMin: 6,
+      arrowWidthMax: 10,
+      arrowHeadLengthMin: 34,
+      arrowHeadLengthMax: 44,
+      arrowHeadWidthMin: 24,
+      arrowHeadWidthMax: 32
+    };
+
+    const VOICE_CONFIG = {
+      enabled: true,
+      volume: 1.0,
+      rate: 0.92,
+      pitch: 0.95,
+      minGapMs: 260
+    };
+
+    const POWERUP_CONFIG = {
+      shieldEnabled: true,
+      firstShieldMinMs: 5000,
+      firstShieldMaxMs: 10000,
+      respawnMinMs: 8000,
+      respawnMaxMs: 15000,
+      pickupRadius: 9
+    };
+
+    const LAYOUT_CONFIG = {
+      arenaWidthRatio: 0.93,
+      arenaMaxDiameter: 675,
+      arenaMinDiameter: 240,
+      eliminatedPanelHeightRatio: 0.12,
+      eliminatedPanelReservedMin: 140,
+      eliminatedPanelReservedMax: 210,
+      arenaVerticalMargins: 10
+    };
+
+    const CONFIG = {
+      countryCount: COUNTRIES.length,
+      arenaPadding: 22,
+      flagRadius: 13,
+      friction: 0.9984,
+      collisionRestitution: 0.92,
+      wallRestitution: 0.96,
+      jitterAcceleration: 9,
+      spawnPadding: 3,
+      seed: 12345,
+      collisionParticleCount: 4,
+      eliminationParticleCount: 26,
+      collisionSoundCooldownMs: 75,
+      preferredSpeedBase: 160,
+      preferredSpeedVariance: 12,
+      minSpeedFactor: 0.7,
+      maxSpeedFactor: 1.5,
+      speedRecoveryMin: 190,
+      speedRecoveryMax: 270,
+      wallInwardImpulseMin: 20,
+      wallInwardImpulseMax: 40,
+      wallMinInwardSpeed: 45,
+      wallOrbitFrameThreshold: 6
+    };
+
+    const TAU = Math.PI * 2;
+
+    const VOICE_PRIORITY = {
+      MILESTONE: 2,
+      WINNER: 4
+    };
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function numberToWords(number) {
+      const units = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+        "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+        "seventeen", "eighteen", "nineteen"
+      ];
+      const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+      if (number < 20) return units[number];
+      if (number < 100) {
+        const ten = Math.floor(number / 10);
+        const rem = number % 10;
+        return rem === 0 ? tens[ten] : `${tens[ten]}-${units[rem]}`;
+      }
+      if (number < 1000) {
+        const hundred = Math.floor(number / 100);
+        const rem = number % 100;
+        return rem === 0 ? `${units[hundred]} hundred` : `${units[hundred]} hundred ${numberToWords(rem)}`;
+      }
+      return String(number);
+    }
+
+    function distPointToSegment(px, py, ax, ay, bx, by) {
+      const abx = bx - ax;
+      const aby = by - ay;
+      const apx = px - ax;
+      const apy = py - ay;
+      const denom = abx * abx + aby * aby || 1;
+      const t = clamp((apx * abx + apy * aby) / denom, 0, 1);
+      const qx = ax + abx * t;
+      const qy = ay + aby * t;
+      return Math.hypot(px - qx, py - qy);
+    }
+
+    function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+      const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+      const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+      const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+      const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
+      const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+      return !(hasNeg && hasPos);
+    }
+
+    function circleIntersectsTriangle(cx, cy, radius, tri) {
+      const { tip, left, right } = tri;
+      if (pointInTriangle(cx, cy, tip.x, tip.y, left.x, left.y, right.x, right.y)) {
+        return true;
+      }
+      if (distPointToSegment(cx, cy, tip.x, tip.y, left.x, left.y) <= radius) {
+        return true;
+      }
+      if (distPointToSegment(cx, cy, left.x, left.y, right.x, right.y) <= radius) {
+        return true;
+      }
+      if (distPointToSegment(cx, cy, right.x, right.y, tip.x, tip.y) <= radius) {
+        return true;
+      }
+      return false;
+    }
+
+    class RNG {
+      constructor(seed) {
+        this.setSeed(seed);
+      }
+
+      setSeed(seed) {
+        this.state = (Number(seed) >>> 0) || 1;
+      }
+
+      next() {
+        let t = (this.state += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+
+      range(min, max) {
+        return min + (max - min) * this.next();
+      }
+    }
+
+    class FlagToken {
+      constructor(country, x, y, vx, vy, radius, speedProfile) {
+        this.country = country;
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = radius;
+        this.mass = Math.max(1, (radius * radius) / 120);
+        this.alive = true;
+        this.supportGlow = 0;
+        this.preferredSpeed = speedProfile.preferred;
+        this.minSpeed = speedProfile.min;
+        this.maxSpeed = speedProfile.max;
+        this.speedRecovery = speedProfile.recovery;
+        this.hasShield = false;
+        this.shieldFlash = 0;
+        this.shieldOrbit = Math.random() * TAU;
+        this.wallContactFrames = 0;
+      }
+    }
+
+    class ParticleSystem {
+      constructor(limit = 900) {
+        this.limit = limit;
+        this.particles = [];
+      }
+
+      emitBurst(x, y, count, opts) {
+        const emitCount = Math.min(count, this.limit - this.particles.length);
+        for (let i = 0; i < emitCount; i += 1) {
+          const angle = Math.random() * TAU;
+          const speed = opts.speedMin + Math.random() * (opts.speedMax - opts.speedMin);
+          const life = opts.lifeMin + Math.random() * (opts.lifeMax - opts.lifeMin);
+          this.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life,
+            maxLife: life,
+            size: opts.sizeMin + Math.random() * (opts.sizeMax - opts.sizeMin),
+            color: opts.color
+          });
+        }
+      }
+
+      emitCollision(x, y, intensity) {
+        const power = clamp(intensity, 0.08, 1);
+        this.emitBurst(x, y, Math.round(2 + CONFIG.collisionParticleCount * power), {
+          color: "rgba(143, 224, 255, 0.9)",
+          speedMin: 22,
+          speedMax: 170 * power + 40,
+          lifeMin: 0.1,
+          lifeMax: 0.26,
+          sizeMin: 0.7,
+          sizeMax: 2.2
+        });
+      }
+
+      emitElimination(x, y) {
+        this.emitBurst(x, y, CONFIG.eliminationParticleCount, {
+          color: "rgba(255, 118, 151, 0.95)",
+          speedMin: 70,
+          speedMax: 300,
+          lifeMin: 0.22,
+          lifeMax: 0.68,
+          sizeMin: 1,
+          sizeMax: 3.5
+        });
+        this.emitBurst(x, y, 12, {
+          color: "rgba(255, 235, 243, 0.85)",
+          speedMin: 40,
+          speedMax: 180,
+          lifeMin: 0.16,
+          lifeMax: 0.46,
+          sizeMin: 0.8,
+          sizeMax: 2.3
+        });
+      }
+
+      emitShieldSpawn(x, y) {
+        this.emitBurst(x, y, 12, {
+          color: "rgba(126, 236, 255, 0.9)",
+          speedMin: 14,
+          speedMax: 72,
+          lifeMin: 0.2,
+          lifeMax: 0.5,
+          sizeMin: 0.8,
+          sizeMax: 2
+        });
+      }
+
+      emitShieldPickup(x, y) {
+        this.emitBurst(x, y, 20, {
+          color: "rgba(139, 240, 255, 0.95)",
+          speedMin: 48,
+          speedMax: 170,
+          lifeMin: 0.18,
+          lifeMax: 0.5,
+          sizeMin: 0.9,
+          sizeMax: 2.5
+        });
+      }
+
+      emitShieldBlock(x, y) {
+        this.emitBurst(x, y, 22, {
+          color: "rgba(161, 244, 255, 0.98)",
+          speedMin: 60,
+          speedMax: 210,
+          lifeMin: 0.16,
+          lifeMax: 0.42,
+          sizeMin: 1,
+          sizeMax: 2.8
+        });
+      }
+
+      emitWinnerAura(x, y) {
+        this.emitBurst(x, y, 5, {
+          color: "rgba(255, 236, 168, 0.84)",
+          speedMin: 10,
+          speedMax: 70,
+          lifeMin: 0.35,
+          lifeMax: 0.8,
+          sizeMin: 0.9,
+          sizeMax: 2.1
+        });
+      }
+
+      update(dt) {
+        for (let i = this.particles.length - 1; i >= 0; i -= 1) {
+          const p = this.particles[i];
+          p.life -= dt;
+          if (p.life <= 0) {
+            this.particles.splice(i, 1);
+            continue;
+          }
+          p.vx *= 0.985;
+          p.vy *= 0.985;
+          p.vy += 8 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        }
+      }
+
+      draw(ctx) {
+        for (const p of this.particles) {
+          ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, TAU);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    class AudioManager {
+      constructor() {
+        this.enabled = true;
+        this.context = null;
+        this.masterGain = null;
+        this.lastCollisionAt = 0;
+        this.lastArrowImpactAt = 0;
+        this.lastResumeAttemptAt = 0;
+        this.resumeRetryUntil = 0;
+        this.resumeAttemptWarned = false;
+      }
+
+      ensureContext() {
+        if (!this.enabled) {
+          return false;
+        }
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) {
+          return false;
+        }
+        if (!this.context) {
+          this.context = new AC();
+          this.masterGain = this.context.createGain();
+          this.masterGain.gain.value = 0.3;
+          this.masterGain.connect(this.context.destination);
+          this.resumeRetryUntil = performance.now() + 400;
+        }
+        if (this.context.state !== "running") {
+          const now = performance.now();
+          const withinStartupWindow = now <= this.resumeRetryUntil;
+          const shouldAttempt = this.lastResumeAttemptAt === 0 || withinStartupWindow;
+          if (shouldAttempt && now - this.lastResumeAttemptAt >= 250) {
+            this.lastResumeAttemptAt = now;
+            this.context.resume().catch((error) => {
+              if (!this.resumeAttemptWarned) {
+                console.warn("Audio resume attempt was blocked:", error);
+                this.resumeAttemptWarned = true;
+              }
+            });
+          }
+        }
+        return true;
+      }
+
+      async unlockForStream() {
+        if (!this.enabled) return false;
+
+        const ok = this.ensureContext();
+        if (!ok || !this.context) return false;
+
+        this.resumeRetryUntil = performance.now() + 2200;
+        const deadline = this.resumeRetryUntil;
+        let warned = false;
+
+        while (this.context && this.context.state !== "running" && performance.now() < deadline) {
+          try {
+            await this.context.resume();
+            this.resumeAttemptWarned = false;
+          } catch (error) {
+            if (!warned) {
+              console.warn("Unable to resume AudioContext automatically:", error);
+              warned = true;
+            }
+          }
+          if (this.context.state === "running") {
+            this.resumeRetryUntil = 0;
+            return true;
+          }
+          await sleep(180);
+        }
+
+        if (this.context && this.context.state !== "running") {
+          console.warn("AudioContext remains suspended due browser autoplay policy.");
+        }
+        this.resumeRetryUntil = 0;
+        return !!this.context && this.context.state === "running";
+      }
+
+      tone({ type = "sine", freq = 440, endFreq = 440, gain = 0.08, duration = 0.12, when = 0 }) {
+        if (!this.ensureContext()) {
+          return;
+        }
+        const ctx = this.context;
+        const start = ctx.currentTime + when;
+        const osc = ctx.createOscillator();
+        const amp = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(Math.max(30, freq), start);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(30, endFreq), start + duration);
+        amp.gain.setValueAtTime(0.0001, start);
+        amp.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), start + 0.01);
+        amp.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(amp);
+        amp.connect(this.masterGain);
+        osc.onended = () => {
+          amp.disconnect();
+          osc.disconnect();
+        };
+        osc.start(start);
+        osc.stop(start + duration + 0.04);
+      }
+
+      noise({ gain = 0.05, duration = 0.1, highpass = 700, when = 0 }) {
+        if (!this.ensureContext()) {
+          return;
+        }
+        const ctx = this.context;
+        const start = ctx.currentTime + when;
+        const len = Math.floor(duration * ctx.sampleRate);
+        const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < len; i += 1) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.value = highpass;
+        const amp = ctx.createGain();
+        amp.gain.setValueAtTime(0.0001, start);
+        amp.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), start + 0.01);
+        amp.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        src.connect(filter);
+        filter.connect(amp);
+        amp.connect(this.masterGain);
+        src.onended = () => {
+          src.disconnect();
+          filter.disconnect();
+          amp.disconnect();
+        };
+        src.start(start);
+        src.stop(start + duration + 0.03);
+      }
+
+      playCollisionSound(intensity) {
+        const now = performance.now();
+        if (now - this.lastCollisionAt < CONFIG.collisionSoundCooldownMs) {
+          return;
+        }
+        this.lastCollisionAt = now;
+        const t = clamp(intensity, 0, 1);
+        if (t < 0.16) {
+          return;
+        }
+        const jitter = (Math.random() - 0.5) * 35;
+        const base = (t < 0.38 ? 690 : t < 0.72 ? 520 : 390) + jitter;
+        const end = base * (t < 0.38 ? 0.9 : 0.78);
+        const gain = t < 0.38 ? 0.018 : t < 0.72 ? 0.034 : 0.055;
+        this.tone({ type: "triangle", freq: base, endFreq: end, gain, duration: 0.05 + t * 0.03 });
+      }
+
+      playArrowWarningSound() {
+        this.tone({ type: "square", freq: 930, endFreq: 770, gain: 0.07, duration: 0.08 });
+      }
+
+      playArrowWhoosh() {
+        this.noise({ gain: 0.062, duration: 0.17, highpass: 520 });
+        this.tone({ type: "sawtooth", freq: 300, endFreq: 95, gain: 0.055, duration: 0.19 });
+      }
+
+      playArrowImpactPrimary() {
+        const now = performance.now();
+        if (now - this.lastArrowImpactAt < 120) {
+          this.playArrowImpactSecondary();
+          return;
+        }
+        this.lastArrowImpactAt = now;
+        this.tone({ type: "square", freq: 220, endFreq: 105, gain: 0.11, duration: 0.11 });
+        this.noise({ gain: 0.08, duration: 0.09, highpass: 420, when: 0.01 });
+      }
+
+      playArrowImpactSecondary() {
+        this.tone({ type: "triangle", freq: 350, endFreq: 250, gain: 0.04, duration: 0.055 });
+      }
+
+      playEliminationSound() {
+        this.tone({ type: "sawtooth", freq: 280, endFreq: 95, gain: 0.11, duration: 0.2 });
+        this.tone({ type: "triangle", freq: 720, endFreq: 210, gain: 0.07, duration: 0.18, when: 0.02 });
+      }
+
+      playShieldSpawnSound() {
+        this.tone({ type: "sine", freq: 470, endFreq: 620, gain: 0.05, duration: 0.12 });
+      }
+
+      playShieldPickupSound() {
+        this.tone({ type: "triangle", freq: 440, endFreq: 760, gain: 0.075, duration: 0.14 });
+        this.tone({ type: "sine", freq: 760, endFreq: 980, gain: 0.055, duration: 0.12, when: 0.03 });
+      }
+
+      playShieldBlockSound() {
+        this.tone({ type: "square", freq: 780, endFreq: 500, gain: 0.085, duration: 0.12 });
+        this.tone({ type: "triangle", freq: 620, endFreq: 290, gain: 0.065, duration: 0.15, when: 0.02 });
+      }
+
+      playCountdownSound(step) {
+        if (step === "BATTLE!") {
+          this.tone({ type: "square", freq: 570, endFreq: 360, gain: 0.12, duration: 0.19 });
+          this.tone({ type: "triangle", freq: 860, endFreq: 550, gain: 0.09, duration: 0.18, when: 0.02 });
+          return;
+        }
+        const pitch = step === "3" ? 350 : step === "2" ? 410 : 470;
+        this.tone({ type: "sine", freq: pitch, endFreq: pitch * 0.95, gain: 0.075, duration: 0.11 });
+      }
+
+      playWinnerSound() {
+        this.tone({ type: "triangle", freq: 330, endFreq: 330, gain: 0.12, duration: 0.19 });
+        this.tone({ type: "triangle", freq: 494, endFreq: 494, gain: 0.13, duration: 0.2, when: 0.11 });
+        this.tone({ type: "triangle", freq: 659, endFreq: 659, gain: 0.14, duration: 0.22, when: 0.22 });
+        this.tone({ type: "sine", freq: 990, endFreq: 740, gain: 0.09, duration: 0.4, when: 0.33 });
+      }
+    }
+
+    class VoiceManager {
+      constructor(config) {
+        this.config = { ...config };
+        this.enabled = this.config.enabled;
+        this.synth = "speechSynthesis" in window ? window.speechSynthesis : null;
+        this.selectedVoice = null;
+        this.voicesReady = false;
+        this.streamPrepared = false;
+        this.queue = [];
+        this.seq = 0;
+        this.processing = false;
+        this.cooldowns = new Map();
+        if (this.synth) {
+          this.initVoices();
+        }
+      }
+
+      initVoices() {
+        const pick = () => {
+          const voices = this.synth.getVoices();
+          if (!voices || voices.length === 0) {
+            return;
+          }
+          this.selectedVoice = this.chooseVoice(voices);
+          this.voicesReady = true;
+        };
+        pick();
+        if (typeof this.synth.addEventListener === "function") {
+          this.synth.addEventListener("voiceschanged", pick);
+        } else if ("onvoiceschanged" in this.synth) {
+          this.synth.onvoiceschanged = pick;
+        }
+      }
+
+      waitForVoices(timeoutMs = 900) {
+        if (!this.canSpeakNow()) {
+          return Promise.resolve(false);
+        }
+        const immediate = this.synth.getVoices();
+        if (immediate && immediate.length > 0) {
+          this.selectedVoice = this.chooseVoice(immediate);
+          this.voicesReady = true;
+          return Promise.resolve(true);
+        }
+
+        return new Promise((resolve) => {
+          let settled = false;
+          let timeoutId = null;
+
+          const finish = (ready) => {
+            if (settled) {
+              return;
+            }
+            settled = true;
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+            }
+            if (typeof this.synth.removeEventListener === "function") {
+              this.synth.removeEventListener("voiceschanged", onVoicesChanged);
+            }
+            resolve(ready);
+          };
+
+          const onVoicesChanged = () => {
+            const voices = this.synth.getVoices();
+            if (!voices || voices.length === 0) {
+              return;
+            }
+            this.selectedVoice = this.chooseVoice(voices);
+            this.voicesReady = true;
+            finish(true);
+          };
+
+          if (typeof this.synth.addEventListener === "function") {
+            this.synth.addEventListener("voiceschanged", onVoicesChanged);
+          }
+          timeoutId = setTimeout(() => {
+            finish(false);
+          }, timeoutMs);
+
+          onVoicesChanged();
+        });
+      }
+
+      async prepareForStream() {
+        if (!this.canSpeakNow()) {
+          return false;
+        }
+        this.synth.cancel();
+        const ready = await this.waitForVoices(1200);
+        if (!ready) {
+          console.warn("Speech synthesis voices are not fully ready yet; using default voice fallback.");
+        }
+        this.streamPrepared = true;
+        return true;
+      }
+
+      chooseVoice(voices) {
+        const terms = [
+          ["google", 18],
+          ["samantha", 16],
+          ["alex", 14],
+          ["microsoft", 12],
+          ["natural", 20],
+          ["neural", 20],
+          ["english", 8]
+        ];
+        const scored = voices.map((voice) => {
+          const name = voice.name.toLowerCase();
+          const lang = (voice.lang || "").toLowerCase();
+          let score = 0;
+          if (lang.startsWith("en")) {
+            score += 34;
+          } else {
+            score -= 60;
+          }
+          for (const [term, value] of terms) {
+            if (name.includes(term)) {
+              score += value;
+            }
+          }
+          if (voice.default) {
+            score += 6;
+          }
+          if (voice.localService) {
+            score += 3;
+          }
+          return { voice, score };
+        });
+        scored.sort((a, b) => b.score - a.score);
+        return scored[0]?.voice || null;
+      }
+
+      canSpeakNow() {
+        return this.enabled && this.synth;
+      }
+
+      enqueue(text, options = {}) {
+        if (!this.canSpeakNow() || !text) {
+          return false;
+        }
+        const now = performance.now();
+        const cooldownKey = options.cooldownKey;
+        const cooldownMs = options.cooldownMs || 0;
+        if (cooldownKey) {
+          const blockedUntil = this.cooldowns.get(cooldownKey) || 0;
+          if (now < blockedUntil) {
+            return false;
+          }
+          this.cooldowns.set(cooldownKey, now + cooldownMs);
+        }
+        if (options.interrupt) {
+          this.synth.cancel();
+          this.queue.length = 0;
+        }
+        const item = {
+          id: this.seq += 1,
+          text,
+          priority: options.priority ?? VOICE_PRIORITY.MILESTONE,
+          rate: options.rate ?? this.config.rate,
+          pitch: options.pitch ?? this.config.pitch,
+          volume: options.volume ?? this.config.volume
+        };
+        this.queue.push(item);
+        this.queue.sort((a, b) => {
+          if (b.priority !== a.priority) {
+            return b.priority - a.priority;
+          }
+          return a.id - b.id;
+        });
+        this.processQueue();
+        return true;
+      }
+
+      async speakNow(text, options = {}) {
+        if (!this.canSpeakNow() || !text) {
+          return false;
+        }
+        if (!this.streamPrepared) {
+          await this.waitForVoices(700);
+          this.streamPrepared = true;
+        }
+        if (options.interrupt) {
+          this.synth.cancel();
+          this.queue.length = 0;
+        } else {
+          while (this.synth.speaking || this.synth.pending || this.processing) {
+            await sleep(30);
+          }
+        }
+        const item = {
+          text,
+          priority: options.priority ?? VOICE_PRIORITY.MILESTONE,
+          rate: options.rate ?? this.config.rate,
+          pitch: options.pitch ?? this.config.pitch,
+          volume: options.volume ?? this.config.volume
+        };
+        const ok = await this.speakItem(item);
+        await sleep(this.config.minGapMs);
+        return ok;
+      }
+
+      async processQueue() {
+        if (this.processing || !this.canSpeakNow()) {
+          return;
+        }
+        this.processing = true;
+        try {
+          while (this.queue.length > 0 && this.canSpeakNow()) {
+            const item = this.queue.shift();
+            await this.speakItem(item);
+            if (this.queue.length > 0) {
+              await sleep(this.config.minGapMs);
+            }
+          }
+        } finally {
+          this.processing = false;
+        }
+      }
+
+      speakItem(item) {
+        if (!this.canSpeakNow()) {
+          return Promise.resolve(false);
+        }
+        if (!this.selectedVoice) {
+          const voices = this.synth.getVoices();
+          if (voices && voices.length > 0) {
+            this.selectedVoice = this.chooseVoice(voices);
+            this.voicesReady = true;
+          }
+        }
+        return new Promise((resolve) => {
+          const utterance = new SpeechSynthesisUtterance(item.text);
+          utterance.rate = item.rate;
+          utterance.pitch = item.pitch;
+          utterance.volume = item.volume;
+          utterance.lang = "en-US";
+          if (this.selectedVoice) {
+            utterance.voice = this.selectedVoice;
+          }
+          utterance.onend = () => resolve(true);
+          utterance.onerror = () => resolve(false);
+          this.synth.speak(utterance);
+        });
+      }
+    }
+
+    class PhysicsEngine {
+      regulateSpeed(game, flag, dt) {
+        let speed = Math.hypot(flag.vx, flag.vy);
+        if (speed < 0.0001) {
+          const dir = game.rng.range(0, TAU);
+          speed = 0.001;
+          flag.vx = Math.cos(dir) * speed;
+          flag.vy = Math.sin(dir) * speed;
+        }
+        if (speed < flag.minSpeed) {
+          const target = flag.preferredSpeed;
+          const boosted = Math.min(target, speed + flag.speedRecovery * dt);
+          const scale = boosted / speed;
+          flag.vx *= scale;
+          flag.vy *= scale;
+        } else if (speed > flag.maxSpeed) {
+          const reduced = Math.max(flag.preferredSpeed, speed - flag.speedRecovery * dt * 0.9);
+          const scale = reduced / speed;
+          flag.vx *= scale;
+          flag.vy *= scale;
+        }
+      }
+
+      update(game, dt) {
+        const flags = game.flags;
+        const drag = Math.pow(game.config.friction, dt * 60);
+        const centerX = game.arena.x;
+        const centerY = game.arena.y;
+        const wallRadius = game.wallRadius;
+
+        for (const flag of flags) {
+          if (!flag.alive) {
+            continue;
+          }
+          const nudge = game.rng.range(0, TAU);
+          flag.vx += Math.cos(nudge) * game.config.jitterAcceleration * dt;
+          flag.vy += Math.sin(nudge) * game.config.jitterAcceleration * dt;
+          flag.vx *= drag;
+          flag.vy *= drag;
+          flag.x += flag.vx * dt;
+          flag.y += flag.vy * dt;
+          flag.supportGlow = Math.max(0, flag.supportGlow - dt * 1.8);
+          flag.shieldFlash = Math.max(0, flag.shieldFlash - dt * 3.2);
+          flag.shieldOrbit += dt * (1.6 + Math.hypot(flag.vx, flag.vy) * 0.004);
+        }
+
+        for (let i = 0; i < flags.length; i += 1) {
+          const a = flags[i];
+          if (!a.alive) {
+            continue;
+          }
+          for (let j = i + 1; j < flags.length; j += 1) {
+            const b = flags[j];
+            if (!b.alive) {
+              continue;
+            }
+            let dx = b.x - a.x;
+            let dy = b.y - a.y;
+            let dist = Math.hypot(dx, dy);
+            const minDist = a.radius + b.radius;
+            if (dist >= minDist) {
+              continue;
+            }
+            if (dist < 0.001) {
+              dx = (game.rng.next() - 0.5) * 0.4;
+              dy = (game.rng.next() - 0.5) * 0.4;
+              dist = Math.hypot(dx, dy);
+            }
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const overlap = minDist - dist;
+            const separation = overlap / (a.mass + b.mass);
+            a.x -= nx * separation * b.mass;
+            a.y -= ny * separation * b.mass;
+            b.x += nx * separation * a.mass;
+            b.y += ny * separation * a.mass;
+
+            const rvx = b.vx - a.vx;
+            const rvy = b.vy - a.vy;
+            const velAlongNormal = rvx * nx + rvy * ny;
+            if (velAlongNormal > 0) {
+              continue;
+            }
+            const restitution = game.config.collisionRestitution;
+            const impulse = (-(1 + restitution) * velAlongNormal) / ((1 / a.mass) + (1 / b.mass));
+            const ix = impulse * nx;
+            const iy = impulse * ny;
+            a.vx -= ix / a.mass;
+            a.vy -= iy / a.mass;
+            b.vx += ix / b.mass;
+            b.vy += iy / b.mass;
+
+            const swirl = (game.rng.next() - 0.5) * 14;
+            a.vx += -ny * swirl;
+            a.vy += nx * swirl;
+            b.vx -= -ny * swirl;
+            b.vy -= nx * swirl;
+
+            const impact = clamp(Math.abs(velAlongNormal) / 420, 0.05, 1);
+            game.handleCollision((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, impact);
+          }
+        }
+
+        const wallContactIndices = [];
+        for (let i = 0; i < flags.length; i += 1) {
+          const flag = flags[i];
+          if (!flag.alive) {
+            continue;
+          }
+          const dx = flag.x - centerX;
+          const dy = flag.y - centerY;
+          const dist = Math.hypot(dx, dy) || 0.0001;
+          const allowed = wallRadius;
+          if (dist >= allowed) {
+            wallContactIndices.push(i);
+            flag.wallContactFrames += 1;
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const safeDistance = Math.max(0, allowed - 1);
+            flag.x = centerX + nx * safeDistance;
+            flag.y = centerY + ny * safeDistance;
+
+            const tx = -ny;
+            const ty = nx;
+            let radialVelocity = flag.vx * nx + flag.vy * ny;
+            let tangentialVelocity = flag.vx * tx + flag.vy * ty;
+            tangentialVelocity *= 0.8;
+
+            if (radialVelocity > 0) {
+              radialVelocity = -radialVelocity * game.config.wallRestitution;
+              game.handleCollision(flag.x, flag.y, clamp(Math.abs(radialVelocity) / 330, 0.18, 0.86));
+            }
+
+            flag.vx = radialVelocity * nx + tangentialVelocity * tx;
+            flag.vy = radialVelocity * ny + tangentialVelocity * ty;
+
+            const newRadialVelocity = flag.vx * nx + flag.vy * ny;
+            if (newRadialVelocity > -game.config.wallMinInwardSpeed) {
+              const correction = game.config.wallMinInwardSpeed + Math.max(0, newRadialVelocity);
+              flag.vx -= nx * correction;
+              flag.vy -= ny * correction;
+            }
+
+            if (flag.wallContactFrames > game.config.wallOrbitFrameThreshold) {
+              flag.vx -= nx * 35;
+              flag.vy -= ny * 35;
+            }
+          } else if (dist < allowed - flag.radius * 0.55) {
+            flag.wallContactFrames = 0;
+          }
+        }
+
+        if (wallContactIndices.length > 1) {
+          for (let aIndex = 0; aIndex < wallContactIndices.length; aIndex += 1) {
+            const a = flags[wallContactIndices[aIndex]];
+            if (!a.alive) continue;
+            for (let bIndex = aIndex + 1; bIndex < wallContactIndices.length; bIndex += 1) {
+              const b = flags[wallContactIndices[bIndex]];
+              if (!b.alive) continue;
+              let dx = b.x - a.x;
+              let dy = b.y - a.y;
+              let dist = Math.hypot(dx, dy);
+              const minDist = a.radius + b.radius;
+              if (dist >= minDist) {
+                continue;
+              }
+              if (dist < 0.001) {
+                dx = (game.rng.next() - 0.5) * 0.4;
+                dy = (game.rng.next() - 0.5) * 0.4;
+                dist = Math.hypot(dx, dy);
+              }
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const overlap = minDist - dist;
+              const separation = overlap / (a.mass + b.mass);
+              a.x -= nx * separation * b.mass;
+              a.y -= ny * separation * b.mass;
+              b.x += nx * separation * a.mass;
+              b.y += ny * separation * a.mass;
+
+              const rvx = b.vx - a.vx;
+              const rvy = b.vy - a.vy;
+              const velAlongNormal = rvx * nx + rvy * ny;
+              if (velAlongNormal > 0) {
+                continue;
+              }
+              const impulse = (-(1 + game.config.collisionRestitution) * velAlongNormal) / ((1 / a.mass) + (1 / b.mass));
+              const ix = impulse * nx;
+              const iy = impulse * ny;
+              a.vx -= ix / a.mass;
+              a.vy -= iy / a.mass;
+              b.vx += ix / b.mass;
+              b.vy += iy / b.mass;
+            }
+          }
+        }
+
+        for (const flag of flags) {
+          if (!flag.alive) {
+            continue;
+          }
+          this.regulateSpeed(game, flag, dt);
+        }
+      }
+    }
+
+    class Renderer {
+      constructor(game) {
+        this.game = game;
+        this.canvas = game.canvas;
+        this.ctx = game.ctx;
+        this.ambientParticles = this.createAmbientParticles(110);
+      }
+
+      createAmbientParticles(count) {
+        const list = [];
+        for (let i = 0; i < count; i += 1) {
+          list.push({
+            x: Math.random(),
+            y: Math.random(),
+            r: Math.random() * 1.6 + 0.25,
+            a: Math.random() * 0.28 + 0.05,
+            vx: (Math.random() - 0.5) * 0.008,
+            vy: (Math.random() - 0.5) * 0.008
+          });
+        }
+        return list;
+      }
+
+      render(dt, now) {
+        const game = this.game;
+        const ctx = this.ctx;
+        const w = game.canvasLogicalWidth;
+        const h = game.canvasLogicalHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        const bg = ctx.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, "rgba(9, 14, 28, 0.98)");
+        bg.addColorStop(1, "rgba(4, 6, 13, 0.98)");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+
+        this.drawAmbient(dt);
+
+        ctx.save();
+        if (game.screenShake > 0.01) {
+          ctx.translate((Math.random() - 0.5) * game.screenShake, (Math.random() - 0.5) * game.screenShake);
+        }
+
+        this.drawArena(now);
+        this.drawShieldPowerup(now);
+        this.drawArrowWarnings(now);
+        this.drawArrows();
+        this.drawFlags(now);
+        this.drawGhosts();
+        this.drawShockwaves();
+        game.particles.draw(ctx);
+
+        if (game.roundManager.state === "winner" && game.winner) {
+          this.drawWinnerFocus(now);
+        }
+
+        ctx.restore();
+      }
+
+      drawAmbient(dt) {
+        const ctx = this.ctx;
+        const w = this.game.canvasLogicalWidth;
+        const h = this.game.canvasLogicalHeight;
+        for (const p of this.ambientParticles) {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          if (p.x > 1) p.x = 0;
+          if (p.x < 0) p.x = 1;
+          if (p.y > 1) p.y = 0;
+          if (p.y < 0) p.y = 1;
+          ctx.globalAlpha = p.a;
+          ctx.fillStyle = "rgba(163, 197, 255, 0.95)";
+          ctx.beginPath();
+          ctx.arc(p.x * w, p.y * h, p.r, 0, TAU);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      drawArena(now) {
+        const game = this.game;
+        const ctx = this.ctx;
+        const { x, y, radius } = game.arena;
+        let phaseGlow = 0.34;
+        let color = "83, 199, 255";
+        if (game.phase === "DANGER") {
+          phaseGlow = 0.44;
+          color = "255, 188, 102";
+        } else if (game.phase === "FINAL") {
+          phaseGlow = 0.55;
+          color = "255, 120, 140";
+        } else if (game.phase === "DUEL") {
+          phaseGlow = 0.62;
+          color = "255, 104, 134";
+        } else if (game.phase === "WINNER") {
+          phaseGlow = 0.66;
+          color = "255, 224, 141";
+        }
+
+        const fill = ctx.createRadialGradient(x, y * 0.97, radius * 0.2, x, y, radius);
+        fill.addColorStop(0, "rgba(22, 44, 88, 0.34)");
+        fill.addColorStop(1, "rgba(7, 12, 24, 0.9)");
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, TAU);
+        ctx.fill();
+
+        const pulse = 0.5 + Math.sin(now * 0.0032) * 0.5;
+        ctx.strokeStyle = `rgba(${color}, ${0.7 + pulse * 0.2})`;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = `rgba(${color}, ${phaseGlow + pulse * 0.14})`;
+        ctx.shadowBlur = 16 + pulse * 8;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, TAU);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      drawShieldPowerup(now) {
+        const powerup = this.game.shieldPowerup;
+        if (!powerup) {
+          return;
+        }
+        const ctx = this.ctx;
+        const pulse = 1 + Math.sin(now * 0.008 + powerup.pulseOffset) * 0.12;
+        const radius = powerup.radius * pulse;
+        ctx.save();
+        ctx.translate(powerup.x, powerup.y);
+        ctx.globalAlpha = 0.32;
+        ctx.fillStyle = "rgba(125, 236, 255, 0.9)";
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 2.1, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = "rgba(152, 241, 255, 0.98)";
+        ctx.lineWidth = 1.7;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.15, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.font = `${Math.round(radius * 1.05)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🛡️", 0, 0);
+        ctx.restore();
+      }
+
+      drawArrowWarnings(now) {
+        const warnings = this.game.arrowWarnings;
+        if (warnings.length === 0) {
+          return;
+        }
+        const ctx = this.ctx;
+        const arena = this.game.arena;
+        for (const warning of warnings) {
+          let x = arena.x;
+          let y = arena.y;
+          let arrow = "↓";
+          const pad = 38;
+          if (warning.side === "top") {
+            y = arena.y - arena.radius - pad;
+            arrow = "↓";
+          } else if (warning.side === "bottom") {
+            y = arena.y + arena.radius + pad;
+            arrow = "↑";
+          } else if (warning.side === "left") {
+            x = arena.x - arena.radius - pad;
+            arrow = "→";
+          } else {
+            x = arena.x + arena.radius + pad;
+            arrow = "←";
+          }
+
+          const t = (now - warning.startedAt) / warning.duration;
+          const pulse = 0.5 + Math.sin(now * 0.024 + warning.phaseOffset) * 0.5;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.globalAlpha = 0.5 + pulse * 0.5;
+          ctx.fillStyle = "rgba(255, 112, 136, 0.95)";
+          ctx.font = "900 30px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("⚠", 0, -10);
+          ctx.font = "900 26px Inter, sans-serif";
+          ctx.fillText(arrow, 0, 18);
+          ctx.globalAlpha = clamp(1 - t * 0.3, 0.35, 1);
+          ctx.restore();
+        }
+      }
+
+      drawArrows() {
+        const arrows = this.game.activeArrows;
+        if (arrows.length === 0) {
+          return;
+        }
+        const ctx = this.ctx;
+        for (const arrow of arrows) {
+          const g = this.game.getArrowGeometry(arrow);
+
+          for (const t of arrow.trail) {
+            ctx.globalAlpha = t.life / t.maxLife;
+            ctx.strokeStyle = "rgba(255, 135, 159, 0.55)";
+            ctx.lineWidth = t.width;
+            ctx.beginPath();
+            ctx.moveTo(t.fromX, t.fromY);
+            ctx.lineTo(t.toX, t.toY);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+
+          const shaftGrad = ctx.createLinearGradient(g.tail.x, g.tail.y, g.headBase.x, g.headBase.y);
+          shaftGrad.addColorStop(0, "rgba(46, 53, 67, 0.95)");
+          shaftGrad.addColorStop(1, "rgba(76, 86, 106, 0.98)");
+          ctx.lineCap = "round";
+          ctx.strokeStyle = shaftGrad;
+          ctx.lineWidth = arrow.shaftWidth;
+          ctx.beginPath();
+          ctx.moveTo(g.tail.x, g.tail.y);
+          ctx.lineTo(g.headBase.x, g.headBase.y);
+          ctx.stroke();
+
+          ctx.strokeStyle = "rgba(221, 231, 255, 0.42)";
+          ctx.lineWidth = arrow.shaftWidth * 0.25;
+          ctx.beginPath();
+          ctx.moveTo(g.tail.x, g.tail.y);
+          ctx.lineTo(g.headBase.x, g.headBase.y);
+          ctx.stroke();
+
+          const headGrad = ctx.createLinearGradient(g.headBase.x, g.headBase.y, g.tip.x, g.tip.y);
+          headGrad.addColorStop(0, "rgba(71, 80, 99, 0.98)");
+          headGrad.addColorStop(0.72, "rgba(130, 141, 164, 0.98)");
+          headGrad.addColorStop(1, "rgba(255, 112, 141, 0.98)");
+
+          ctx.shadowColor = "rgba(255, 104, 137, 0.5)";
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = headGrad;
+          ctx.beginPath();
+          ctx.moveTo(g.tip.x, g.tip.y);
+          ctx.lineTo(g.left.x, g.left.y);
+          ctx.lineTo(g.right.x, g.right.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.strokeStyle = "rgba(255, 178, 195, 0.9)";
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(g.tip.x, g.tip.y);
+          ctx.lineTo(g.left.x, g.left.y);
+          ctx.lineTo(g.right.x, g.right.y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+
+      drawFlags(now) {
+        const ctx = this.ctx;
+        const game = this.game;
+        for (const flag of game.flags) {
+          if (!flag.alive) {
+            continue;
+          }
+          const isWinner = game.winner && game.winner.country.id === flag.country.id;
+          const pulse = isWinner ? 1 + Math.sin(now * 0.009) * 0.08 : 1;
+          const supportScale = 1 + flag.supportGlow * 0.05;
+          const scale = pulse * supportScale;
+
+          ctx.save();
+          ctx.translate(flag.x, flag.y);
+          ctx.scale(scale, scale);
+
+          const glow = ctx.createRadialGradient(0, 0, flag.radius * 0.2, 0, 0, flag.radius * 1.55);
+          glow.addColorStop(0, "rgba(221, 237, 255, 0.95)");
+          glow.addColorStop(1, `rgba(89, 170, 255, ${0.15 + flag.supportGlow * 0.2})`);
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, flag.radius * 1.32, 0, TAU);
+          ctx.fill();
+
+          ctx.fillStyle = "rgba(12, 18, 33, 0.98)";
+          ctx.beginPath();
+          ctx.arc(0, 0, flag.radius + 0.8, 0, TAU);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(170, 211, 255, 0.9)";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(0, 0, flag.radius, 0, TAU);
+          ctx.stroke();
+
+          ctx.font = `${Math.round(flag.radius * 1.18)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#fff";
+          ctx.fillText(flag.country.flag, 0, 0.9);
+
+          if (flag.hasShield) {
+            const ringPulse = 1 + Math.sin(now * 0.009 + flag.shieldOrbit) * 0.07;
+            const shieldRadius = flag.radius * 1.45 * ringPulse;
+            ctx.strokeStyle = `rgba(132, 236, 255, ${0.62 + flag.shieldFlash * 0.35})`;
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, shieldRadius, 0, TAU);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
+      drawGhosts() {
+        const ctx = this.ctx;
+        for (const ghost of this.game.eliminationGhosts) {
+          const t = clamp(ghost.life / ghost.maxLife, 0, 1);
+          const scale = ghost.scale * (1 + (1 - t) * 0.18);
+          ctx.save();
+          ctx.translate(ghost.x, ghost.y);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = t * 0.9;
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(255, 121, 151, 0.35)";
+          ctx.arc(0, 0, ghost.radius * 1.08, 0, TAU);
+          ctx.fill();
+          ctx.font = `${Math.round(ghost.radius * 1.2)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#fff";
+          ctx.fillText(ghost.flag, 0, 0.8);
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      drawShockwaves() {
+        const ctx = this.ctx;
+        for (const wave of this.game.shockwaves) {
+          const t = clamp(1 - wave.life / wave.maxLife, 0, 1);
+          const radius = lerp(4, wave.maxRadius, t);
+          ctx.globalAlpha = wave.life / wave.maxLife;
+          ctx.strokeStyle = wave.color;
+          ctx.lineWidth = 2.6 * (1 - t * 0.7);
+          ctx.beginPath();
+          ctx.arc(wave.x, wave.y, radius, 0, TAU);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      drawWinnerFocus(now) {
+        const winner = this.game.winner;
+        if (!winner || !winner.alive) {
+          return;
+        }
+        const ctx = this.ctx;
+        const w = this.game.canvasLogicalWidth;
+        const h = this.game.canvasLogicalHeight;
+        const grad = ctx.createRadialGradient(
+          winner.x,
+          winner.y,
+          winner.radius * 1.8,
+          winner.x,
+          winner.y,
+          Math.max(w, h) * 0.68
+        );
+        grad.addColorStop(0, "rgba(0, 0, 0, 0)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0.52)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        const pulse = 1 + Math.sin(now * 0.006) * 0.1;
+        ctx.strokeStyle = "rgba(255, 223, 136, 0.85)";
+        ctx.shadowColor = "rgba(255, 223, 136, 0.7)";
+        ctx.shadowBlur = 24;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(winner.x, winner.y, winner.radius * (2.2 * pulse), 0, TAU);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    class RoundManager {
+      constructor(game) {
+        this.game = game;
+        this.round = 0;
+        this.state = "menu";
+        this.isBusy = false;
+      }
+
+      async startRound() {
+        if (this.isBusy) {
+          return;
+        }
+        this.isBusy = true;
+        const isFirstRound = this.round === 0;
+        this.round += 1;
+        this.state = "intro";
+        this.game.audio.ensureContext();
+        await this.game.prepareRound();
+        if (isFirstRound) {
+          await this.game.playIntroAndCountdown();
+        } else {
+          await this.game.playCountdownOnly();
+        }
+        this.state = "running";
+        this.game.roundStartTime = performance.now();
+        this.isBusy = false;
+      }
+
+      setWinner() {
+        this.state = "winner";
+        this.isBusy = false;
+      }
+    }
+
+    class Game {
+      constructor() {
+        this.config = CONFIG;
+        this.canvas = document.getElementById("battleCanvas");
+        this.ctx = this.canvas.getContext("2d", { alpha: false });
+        this.canvasLogicalWidth = 0;
+        this.canvasLogicalHeight = 0;
+
+        this.flags = [];
+        this.eliminationCount = 0;
+        this.lastWinnerFlag = null;
+        this.winner = null;
+        this.phase = "NORMAL";
+        this.milestones = { ten: false, five: false, two: false };
+
+        this.eliminationGhosts = [];
+        this.shockwaves = [];
+        this.screenShake = 0;
+
+        this.currentSeed = this.config.seed;
+        this.nextSeedOverride = null;
+        this.rng = new RNG(this.currentSeed);
+
+        this.audio = new AudioManager();
+        this.voice = new VoiceManager(VOICE_CONFIG);
+        this.physics = new PhysicsEngine();
+        this.particles = new ParticleSystem(900);
+        this.roundManager = new RoundManager(this);
+        this.renderer = new Renderer(this);
+
+        this.arena = { x: 0, y: 0, radius: 0 };
+        this.wallRadius = 0;
+        this.lockedArena = null;
+
+        this.roundStartTime = 0;
+        this.lastFrame = performance.now();
+        this.lastToastTimer = null;
+        this.lastAliveCount = -1;
+        this.freezePhysicsAt = Infinity;
+
+        this.arrowWarnings = [];
+        this.activeArrows = [];
+        this.lastHazardSide = null;
+        this.nextHazardAt = Infinity;
+        this.shieldPowerup = null;
+        this.nextShieldAt = Infinity;
+
+        this.dom = {
+          app: document.getElementById("app"),
+          topHud: document.getElementById("topHud"),
+          statusArea: document.getElementById("statusArea"),
+          arenaPane: document.getElementById("arenaPane"),
+          startOverlay: document.getElementById("startOverlay"),
+          startBtn: document.getElementById("startBtn"),
+          startCountriesLine: document.getElementById("startCountriesLine"),
+          winnerOverlay: document.getElementById("winnerOverlay"),
+          winnerFlag: document.getElementById("winnerFlag"),
+          winnerName: document.getElementById("winnerName"),
+          countdownOverlay: document.getElementById("countdownOverlay"),
+          eventToast: document.getElementById("eventToast"),
+          aliveLabel: document.getElementById("aliveLabel"),
+          tagline: document.getElementById("tagline"),
+          lastWinnerFlag: document.getElementById("lastWinnerFlag"),
+          roundLabel: document.getElementById("roundLabel"),
+          eliminatedFlags: document.getElementById("eliminatedFlags")
+        };
+
+        this.resizeCanvas();
+        this.bindEvents();
+        this.updateHud();
+        this.loop = this.loop.bind(this);
+        requestAnimationFrame(this.loop);
+      }
+
+      bindEvents() {
+        window.addEventListener("resize", () => this.resizeCanvas());
+        this.dom.startBtn.addEventListener("click", async () => {
+          this.dom.startBtn.disabled = true;
+          this.audio.ensureContext();
+          await this.roundManager.startRound();
+          this.dom.startBtn.disabled = false;
+        });
+      }
+
+      randomSeed() {
+        if (window.crypto && window.crypto.getRandomValues) {
+          const arr = new Uint32Array(1);
+          window.crypto.getRandomValues(arr);
+          return arr[0];
+        }
+        return (Date.now() + Math.floor(Math.random() * 100000)) >>> 0;
+      }
+
+      setSeed(seed) {
+        const value = Number(seed);
+        if (!Number.isFinite(value)) {
+          return false;
+        }
+        this.nextSeedOverride = value >>> 0;
+        return true;
+      }
+
+      resizeCanvas() {
+        this.applyArenaLayout();
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.canvas.width = Math.max(1, Math.round(rect.width * dpr));
+        this.canvas.height = Math.max(1, Math.round(rect.height * dpr));
+        this.canvasLogicalWidth = rect.width;
+        this.canvasLogicalHeight = rect.height;
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        this.lockedArena = null;
+        this.computeArena();
+      }
+
+      applyArenaLayout() {
+        const viewportWidth = this.dom.app.clientWidth;
+        const viewportHeight = this.dom.app.clientHeight;
+        const headerHeight = this.dom.topHud.getBoundingClientRect().height;
+        const reservedPanelHeight = clamp(
+          viewportHeight * LAYOUT_CONFIG.eliminatedPanelHeightRatio,
+          LAYOUT_CONFIG.eliminatedPanelReservedMin,
+          LAYOUT_CONFIG.eliminatedPanelReservedMax
+        );
+        this.dom.statusArea.style.height = `${reservedPanelHeight}px`;
+        this.dom.statusArea.style.minHeight = `${reservedPanelHeight}px`;
+        this.dom.statusArea.style.maxHeight = `${reservedPanelHeight}px`;
+
+        const maxArenaWidth = Math.min(
+          viewportWidth * LAYOUT_CONFIG.arenaWidthRatio,
+          LAYOUT_CONFIG.arenaMaxDiameter
+        );
+        const maxArenaHeight = viewportHeight
+          - headerHeight
+          - reservedPanelHeight
+          - LAYOUT_CONFIG.arenaVerticalMargins;
+        const arenaDiameter = clamp(
+          Math.min(maxArenaWidth, maxArenaHeight),
+          LAYOUT_CONFIG.arenaMinDiameter,
+          LAYOUT_CONFIG.arenaMaxDiameter
+        );
+
+        this.dom.arenaPane.style.width = `${arenaDiameter}px`;
+        this.dom.arenaPane.style.height = `${arenaDiameter}px`;
+      }
+
+      computeArena() {
+        const w = this.canvasLogicalWidth;
+        const h = this.canvasLogicalHeight;
+        if (this.lockedArena) {
+          this.arena.x = this.lockedArena.x;
+          this.arena.y = this.lockedArena.y;
+          this.arena.radius = this.lockedArena.radius;
+          this.wallRadius = this.arena.radius - this.config.flagRadius - 1.8;
+          return;
+        }
+        this.arena.x = w * 0.5;
+        this.arena.y = h * 0.5;
+        const arenaDiameter = Math.min(w, h);
+        this.arena.radius = Math.max(110, arenaDiameter * 0.5 - this.config.arenaPadding * 0.15);
+        this.wallRadius = this.arena.radius - this.config.flagRadius - 1.8;
+      }
+
+      lockArenaForRound() {
+        this.lockedArena = {
+          x: this.arena.x,
+          y: this.arena.y,
+          radius: this.arena.radius
+        };
+      }
+
+      getAliveFlags() {
+        return this.flags.filter((flag) => flag.alive);
+      }
+
+      getAliveCount() {
+        return this.getAliveFlags().length;
+      }
+
+      updateHud() {
+        const alive = this.roundManager.state === "menu" && this.flags.length === 0
+          ? this.config.countryCount
+          : this.getAliveCount();
+        this.dom.aliveLabel.textContent = `ALIVE: ${alive} / ${this.config.countryCount}`;
+        this.dom.lastWinnerFlag.textContent = this.lastWinnerFlag || "—";
+        this.dom.roundLabel.textContent = String(Math.max(this.roundManager.round, 1));
+        this.dom.tagline.textContent = `${this.config.countryCount} COUNTRIES • ONE WINNER`;
+        this.dom.startCountriesLine.textContent = `${this.config.countryCount} COUNTRIES`;
+      }
+
+      showToast(message, ms = 900) {
+        const node = this.dom.eventToast;
+        node.textContent = message;
+        node.classList.add("show");
+        if (this.lastToastTimer) {
+          clearTimeout(this.lastToastTimer);
+        }
+        this.lastToastTimer = setTimeout(() => {
+          node.classList.remove("show");
+        }, ms);
+      }
+
+      appendEliminatedFlag(flag) {
+        const node = document.createElement("span");
+        node.textContent = flag.country.flag;
+        this.dom.eliminatedFlags.appendChild(node);
+      }
+
+      createFlags() {
+        this.flags = [];
+        const countries = COUNTRIES.slice(0, this.config.countryCount);
+        const spawnRadius = this.wallRadius - this.config.flagRadius - this.config.spawnPadding;
+        const minGap = this.config.flagRadius * 2 + 1.2;
+
+        for (const country of countries) {
+          let x = this.arena.x;
+          let y = this.arena.y;
+          let placed = false;
+
+          for (let attempts = 0; attempts < 900; attempts += 1) {
+            const angle = this.rng.range(0, TAU);
+            const radius = Math.sqrt(this.rng.next()) * spawnRadius;
+            x = this.arena.x + Math.cos(angle) * radius;
+            y = this.arena.y + Math.sin(angle) * radius;
+            placed = true;
+            for (const other of this.flags) {
+              const d = Math.hypot(x - other.x, y - other.y);
+              if (d < minGap) {
+                placed = false;
+                break;
+              }
+            }
+            if (placed) {
+              break;
+            }
+          }
+
+          if (!placed) {
+            const fallbackAngle = this.rng.range(0, TAU);
+            const fallbackRadius = this.rng.range(0, spawnRadius * 0.92);
+            x = this.arena.x + Math.cos(fallbackAngle) * fallbackRadius;
+            y = this.arena.y + Math.sin(fallbackAngle) * fallbackRadius;
+          }
+
+          const preferred = this.rng.range(
+            this.config.preferredSpeedBase - this.config.preferredSpeedVariance,
+            this.config.preferredSpeedBase + this.config.preferredSpeedVariance
+          );
+          const speedProfile = {
+            preferred,
+            min: preferred * this.config.minSpeedFactor,
+            max: preferred * this.config.maxSpeedFactor,
+            recovery: this.rng.range(this.config.speedRecoveryMin, this.config.speedRecoveryMax)
+          };
+          const startSpeed = preferred * this.rng.range(0.95, 1.05);
+          const dir = this.rng.range(0, TAU);
+          this.flags.push(
+            new FlagToken(
+              country,
+              x,
+              y,
+              Math.cos(dir) * startSpeed,
+              Math.sin(dir) * startSpeed,
+              this.config.flagRadius,
+              speedProfile
+            )
+          );
+        }
+      }
+
+      resetRoundDynamics() {
+        this.eliminationCount = 0;
+        this.eliminationGhosts = [];
+        this.shockwaves = [];
+        this.particles.particles.length = 0;
+        this.lastAliveCount = -1;
+        this.winner = null;
+        this.phase = "NORMAL";
+        this.milestones = { ten: false, five: false, two: false };
+        this.arrowWarnings = [];
+        this.activeArrows = [];
+        this.lastHazardSide = null;
+        this.nextHazardAt = Infinity;
+        this.shieldPowerup = null;
+        this.nextShieldAt = Infinity;
+        this.freezePhysicsAt = Infinity;
+        this.dom.eliminatedFlags.innerHTML = "";
+      }
+
+      scheduleFirstHazard(now) {
+        this.nextHazardAt = now + this.rng.range(HAZARD_CONFIG.firstHazardMinMs, HAZARD_CONFIG.firstHazardMaxMs);
+      }
+
+      scheduleFirstShield(now) {
+        if (!POWERUP_CONFIG.shieldEnabled) {
+          this.nextShieldAt = Infinity;
+          return;
+        }
+        this.nextShieldAt = now + this.rng.range(POWERUP_CONFIG.firstShieldMinMs, POWERUP_CONFIG.firstShieldMaxMs);
+      }
+
+      scheduleNextShield(now) {
+        if (!POWERUP_CONFIG.shieldEnabled || this.roundManager.state !== "running") {
+          this.nextShieldAt = Infinity;
+          return;
+        }
+        this.nextShieldAt = now + this.rng.range(POWERUP_CONFIG.respawnMinMs, POWERUP_CONFIG.respawnMaxMs);
+      }
+
+      getHazardIntervalMultiplier() {
+        const alive = this.getAliveCount();
+        if (alive >= 10) {
+          return 1;
+        }
+        if (alive >= 5) {
+          return 0.82;
+        }
+        return 0.68;
+      }
+
+      scheduleNextHazard(now, quickPairSpawn = false) {
+        if (this.roundManager.state !== "running") {
+          this.nextHazardAt = Infinity;
+          return;
+        }
+        if (quickPairSpawn) {
+          this.nextHazardAt = now + this.rng.range(HAZARD_CONFIG.quickSpawnMinMs, HAZARD_CONFIG.quickSpawnMaxMs);
+          return;
+        }
+        const base = this.rng.range(HAZARD_CONFIG.intervalMinMs, HAZARD_CONFIG.intervalMaxMs);
+        this.nextHazardAt = now + base * this.getHazardIntervalMultiplier();
+      }
+
+      async prepareRound() {
+        this.dom.startOverlay.classList.add("hidden");
+        this.dom.winnerOverlay.classList.add("hidden");
+        this.resetRoundDynamics();
+        if (this.nextSeedOverride !== null) {
+          this.currentSeed = this.nextSeedOverride;
+          this.nextSeedOverride = null;
+        } else {
+          this.currentSeed = this.randomSeed();
+        }
+        this.rng.setSeed(this.currentSeed);
+        this.lockArenaForRound();
+        this.createFlags();
+        const now = performance.now();
+        this.scheduleFirstHazard(now);
+        this.scheduleFirstShield(now);
+        this.updatePhase();
+        this.updateHud();
+      }
+
+      async playIntroAndCountdown() {
+        const countWords = numberToWords(this.config.countryCount);
+        await this.voice.speakNow(`${countWords} countries. One arena. One winner.`, {
+          interrupt: true,
+          priority: VOICE_PRIORITY.MILESTONE
+        });
+        await sleep(260);
+        await this.voice.speakNow("Let the battle begin!", {
+          priority: VOICE_PRIORITY.MILESTONE
+        });
+        await this.playCountdownOnly();
+      }
+
+      async playCountdownOnly() {
+        if (!ROUND_CONFIG.countdownEnabled) {
+          return;
+        }
+        const steps = [];
+        for (let i = ROUND_CONFIG.countdownSeconds; i >= 1; i -= 1) {
+          steps.push(String(i));
+        }
+        steps.push("BATTLE!");
+
+        this.dom.countdownOverlay.classList.remove("hidden");
+        for (const step of steps) {
+          this.dom.countdownOverlay.textContent = step;
+          this.dom.countdownOverlay.classList.remove("animate");
+          void this.dom.countdownOverlay.offsetWidth;
+          this.dom.countdownOverlay.classList.add("animate");
+          this.audio.playCountdownSound(step);
+          await sleep(step === "BATTLE!" ? 680 : 620);
+        }
+        this.dom.countdownOverlay.classList.add("hidden");
+      }
+
+      getPhaseFromAlive(alive) {
+        if (alive <= 1) return "WINNER";
+        if (alive === 2) return "DUEL";
+        if (alive <= 5) return "FINAL";
+        if (alive <= 10) return "DANGER";
+        return "NORMAL";
+      }
+
+      updatePhase() {
+        const alive = this.getAliveCount();
+        this.phase = this.getPhaseFromAlive(alive);
+
+        if (alive <= 10 && alive > 5 && !this.milestones.ten) {
+          this.milestones.ten = true;
+          this.voice.enqueue("Ten countries remain.", {
+            priority: VOICE_PRIORITY.MILESTONE,
+            cooldownKey: "ten-remain",
+            cooldownMs: 12000
+          });
+        }
+        if (alive <= 5 && alive > 2 && !this.milestones.five) {
+          this.milestones.five = true;
+          this.voice.enqueue("Only five remain!", {
+            priority: VOICE_PRIORITY.MILESTONE,
+            cooldownKey: "five-remain",
+            cooldownMs: 12000
+          });
+        }
+        if (alive === 2 && !this.milestones.two) {
+          this.milestones.two = true;
+          this.voice.enqueue("Two countries left. Who will survive?", {
+            priority: VOICE_PRIORITY.MILESTONE,
+            cooldownKey: "two-remain",
+            cooldownMs: 18000
+          });
+          const now = performance.now();
+          if (this.nextHazardAt < now + 1000) {
+            this.nextHazardAt = now + 1000;
+          }
+        }
+      }
+
+      getConcurrentArrowLimit() {
+        return this.getAliveCount() < 10 ? 2 : 1;
+      }
+
+      pickHazardSide(disallowSides = []) {
+        const allSides = ["top", "right", "bottom", "left"];
+        let options = allSides.filter((side) => !disallowSides.includes(side));
+        if (options.length === 0) {
+          options = allSides.slice();
+        }
+        const noRepeat = options.filter((side) => side !== this.lastHazardSide);
+        if (noRepeat.length > 0) {
+          options = noRepeat;
+        }
+        return options[Math.floor(this.rng.next() * options.length)];
+      }
+
+      getArrowSpeed() {
+        if (this.phase === "DANGER") return 840;
+        if (this.phase === "FINAL") return 900;
+        if (this.phase === "DUEL") return 940;
+        return 780;
+      }
+
+      createArrow(side) {
+        const radius = this.wallRadius;
+        const offset = this.rng.range(-radius * 0.6, radius * 0.6);
+        const headLength = this.rng.range(HAZARD_CONFIG.arrowHeadLengthMin, HAZARD_CONFIG.arrowHeadLengthMax);
+        const headWidth = this.rng.range(HAZARD_CONFIG.arrowHeadWidthMin, HAZARD_CONFIG.arrowHeadWidthMax);
+        const shaftLength = this.rng.range(HAZARD_CONFIG.arrowLengthMin, HAZARD_CONFIG.arrowLengthMax);
+        const shaftWidth = this.rng.range(HAZARD_CONFIG.arrowWidthMin, HAZARD_CONFIG.arrowWidthMax);
+        const margin = shaftLength + headLength + 35;
+        const arrow = {
+          side,
+          x: this.arena.x,
+          y: this.arena.y,
+          dirX: 0,
+          dirY: 0,
+          headLength,
+          headWidth,
+          shaftLength,
+          shaftWidth,
+          speed: this.getArrowSpeed(),
+          hitFlags: new Set(),
+          hitCount: 0,
+          trail: []
+        };
+
+        if (side === "top") {
+          arrow.x = this.arena.x + offset;
+          arrow.y = this.arena.y - this.arena.radius - margin;
+          arrow.dirY = 1;
+        } else if (side === "bottom") {
+          arrow.x = this.arena.x + offset;
+          arrow.y = this.arena.y + this.arena.radius + margin;
+          arrow.dirY = -1;
+        } else if (side === "left") {
+          arrow.x = this.arena.x - this.arena.radius - margin;
+          arrow.y = this.arena.y + offset;
+          arrow.dirX = 1;
+        } else {
+          arrow.x = this.arena.x + this.arena.radius + margin;
+          arrow.y = this.arena.y + offset;
+          arrow.dirX = -1;
+        }
+        return arrow;
+      }
+
+      triggerArrowWarning(now) {
+        const blockedSides = [
+          ...this.activeArrows.map((arrow) => arrow.side),
+          ...this.arrowWarnings.map((warning) => warning.side)
+        ];
+        const side = this.pickHazardSide(blockedSides);
+        this.lastHazardSide = side;
+        this.arrowWarnings.push({
+          side,
+          startedAt: now,
+          duration: this.rng.range(HAZARD_CONFIG.warningMinMs, HAZARD_CONFIG.warningMaxMs),
+          phaseOffset: this.rng.range(0, TAU)
+        });
+        this.audio.playArrowWarningSound();
+      }
+
+      getArrowGeometry(arrow) {
+        const tip = { x: arrow.x, y: arrow.y };
+        const headBase = {
+          x: arrow.x - arrow.dirX * arrow.headLength,
+          y: arrow.y - arrow.dirY * arrow.headLength
+        };
+        const tail = {
+          x: headBase.x - arrow.dirX * arrow.shaftLength,
+          y: headBase.y - arrow.dirY * arrow.shaftLength
+        };
+        const perpX = -arrow.dirY;
+        const perpY = arrow.dirX;
+        const left = {
+          x: headBase.x + perpX * (arrow.headWidth * 0.5),
+          y: headBase.y + perpY * (arrow.headWidth * 0.5)
+        };
+        const right = {
+          x: headBase.x - perpX * (arrow.headWidth * 0.5),
+          y: headBase.y - perpY * (arrow.headWidth * 0.5)
+        };
+        return { tip, headBase, tail, left, right };
+      }
+
+      getArrowHeadTriangle(arrow) {
+        const g = this.getArrowGeometry(arrow);
+        return {
+          tip: g.tip,
+          left: g.left,
+          right: g.right
+        };
+      }
+
+      isArrowOutOfBounds(arrow) {
+        const total = arrow.shaftLength + arrow.headLength + 100;
+        if (arrow.side === "top" && arrow.y - total > this.arena.y + this.arena.radius + 100) {
+          return true;
+        }
+        if (arrow.side === "bottom" && arrow.y + total < this.arena.y - this.arena.radius - 100) {
+          return true;
+        }
+        if (arrow.side === "left" && arrow.x - total > this.arena.x + this.arena.radius + 100) {
+          return true;
+        }
+        if (arrow.side === "right" && arrow.x + total < this.arena.x - this.arena.radius - 100) {
+          return true;
+        }
+        return false;
+      }
+
+      spawnShield() {
+        if (this.shieldPowerup || this.roundManager.state !== "running") {
+          return;
+        }
+        let x = this.arena.x;
+        let y = this.arena.y;
+        let placed = false;
+        const radius = POWERUP_CONFIG.pickupRadius;
+        for (let i = 0; i < 240; i += 1) {
+          const angle = this.rng.range(0, TAU);
+          const r = Math.sqrt(this.rng.next()) * (this.wallRadius * 0.72);
+          x = this.arena.x + Math.cos(angle) * r;
+          y = this.arena.y + Math.sin(angle) * r;
+          placed = true;
+          for (const flag of this.flags) {
+            if (!flag.alive) {
+              continue;
+            }
+            if (Math.hypot(x - flag.x, y - flag.y) < flag.radius * 2.2) {
+              placed = false;
+              break;
+            }
+          }
+          if (placed) {
+            break;
+          }
+        }
+        if (!placed) {
+          return;
+        }
+        this.shieldPowerup = {
+          x,
+          y,
+          radius,
+          pulseOffset: this.rng.range(0, TAU)
+        };
+        this.audio.playShieldSpawnSound();
+        this.particles.emitShieldSpawn(x, y);
+      }
+
+      collectShield(flag, now) {
+        if (!this.shieldPowerup || !flag.alive) {
+          return;
+        }
+        flag.hasShield = true;
+        flag.shieldFlash = 1;
+        flag.supportGlow = 1;
+        this.audio.playShieldPickupSound();
+        this.particles.emitShieldPickup(flag.x, flag.y);
+        this.shieldPowerup = null;
+        this.scheduleNextShield(now);
+        if (this.rng.next() < 0.28) {
+          this.voice.enqueue(`${flag.country.name} has a shield!`, {
+            priority: VOICE_PRIORITY.MILESTONE,
+            cooldownKey: "shield-pickup-voice",
+            cooldownMs: 7000
+          });
+        }
+      }
+
+      handleShieldBlock(flag, hitX, hitY) {
+        flag.hasShield = false;
+        flag.shieldFlash = 1;
+        flag.supportGlow = 1;
+        this.audio.playShieldBlockSound();
+        this.particles.emitShieldBlock(hitX, hitY);
+        this.shockwaves.push({
+          x: hitX,
+          y: hitY,
+          life: 0.24,
+          maxLife: 0.24,
+          maxRadius: 58,
+          color: "rgba(147, 234, 255, 0.9)"
+        });
+        this.screenShake = Math.max(this.screenShake, 5.5);
+        this.showToast("🛡️", 380);
+      }
+
+      updatePowerups(now) {
+        if (!POWERUP_CONFIG.shieldEnabled || this.roundManager.state !== "running") {
+          this.shieldPowerup = null;
+          return;
+        }
+        if (!this.shieldPowerup && now >= this.nextShieldAt) {
+          this.spawnShield();
+          if (!this.shieldPowerup) {
+            this.scheduleNextShield(now + 800);
+          }
+        }
+        if (!this.shieldPowerup) {
+          return;
+        }
+        for (const flag of this.flags) {
+          if (!flag.alive) {
+            continue;
+          }
+          const d = Math.hypot(flag.x - this.shieldPowerup.x, flag.y - this.shieldPowerup.y);
+          if (d <= flag.radius + this.shieldPowerup.radius) {
+            this.collectShield(flag, now);
+            break;
+          }
+        }
+      }
+
+      eliminateFlag(flag, hitX, hitY, options = {}) {
+        if (!flag.alive || this.roundManager.state !== "running") {
+          return;
+        }
+        flag.alive = false;
+        if (!options.skipSound) {
+          this.audio.playEliminationSound();
+        }
+        this.particles.emitElimination(hitX, hitY);
+        this.eliminationGhosts.push({
+          x: hitX,
+          y: hitY,
+          radius: flag.radius,
+          flag: flag.country.flag,
+          life: 0.28,
+          maxLife: 0.28,
+          scale: 1.1
+        });
+        this.shockwaves.push({
+          x: hitX,
+          y: hitY,
+          life: 0.22,
+          maxLife: 0.22,
+          maxRadius: 52,
+          color: "rgba(255, 164, 185, 0.86)"
+        });
+        this.screenShake = Math.max(this.screenShake, 6.2);
+        this.appendEliminatedFlag(flag);
+        this.eliminationCount += 1;
+        this.updatePhase();
+        const alive = this.getAliveCount();
+        if (alive === 1) {
+          this.declareWinner(this.getAliveFlags()[0]);
+        }
+      }
+
+      updateHazards(dt, now) {
+        if (this.roundManager.state !== "running") {
+          this.arrowWarnings = [];
+          this.activeArrows = [];
+          return;
+        }
+
+        for (let i = this.arrowWarnings.length - 1; i >= 0; i -= 1) {
+          const warning = this.arrowWarnings[i];
+          if (now - warning.startedAt >= warning.duration) {
+            this.activeArrows.push(this.createArrow(warning.side));
+            this.arrowWarnings.splice(i, 1);
+            this.audio.playArrowWhoosh();
+          }
+        }
+
+        for (let i = this.activeArrows.length - 1; i >= 0; i -= 1) {
+          const arrow = this.activeArrows[i];
+          const prevX = arrow.x;
+          const prevY = arrow.y;
+          arrow.x += arrow.dirX * arrow.speed * dt;
+          arrow.y += arrow.dirY * arrow.speed * dt;
+          arrow.trail.push({
+            fromX: prevX,
+            fromY: prevY,
+            toX: arrow.x,
+            toY: arrow.y,
+            life: 0.17,
+            maxLife: 0.17,
+            width: arrow.shaftWidth * 0.8
+          });
+          for (let t = arrow.trail.length - 1; t >= 0; t -= 1) {
+            arrow.trail[t].life -= dt;
+            if (arrow.trail[t].life <= 0) {
+              arrow.trail.splice(t, 1);
+            }
+          }
+
+          const headTriangle = this.getArrowHeadTriangle(arrow);
+          const hitNow = [];
+          const blockedNow = [];
+          for (const flag of this.flags) {
+            if (!flag.alive) {
+              continue;
+            }
+            if (arrow.hitFlags.has(flag.country.id)) {
+              continue;
+            }
+            if (!circleIntersectsTriangle(flag.x, flag.y, flag.radius, headTriangle)) {
+              continue;
+            }
+            arrow.hitFlags.add(flag.country.id);
+            if (flag.hasShield) {
+              blockedNow.push(flag);
+            } else {
+              hitNow.push(flag);
+            }
+          }
+
+          if (blockedNow.length > 0) {
+            blockedNow.forEach((flag) => {
+              this.handleShieldBlock(flag, flag.x, flag.y);
+            });
+          }
+
+          if (hitNow.length > 0) {
+            if (arrow.hitCount === 0) {
+              this.audio.playArrowImpactPrimary();
+              this.audio.playEliminationSound();
+            }
+            hitNow.forEach((flag, idx) => {
+              if (arrow.hitCount > 0 || idx > 0) {
+                this.audio.playArrowImpactSecondary();
+              }
+              this.eliminateFlag(flag, flag.x, flag.y, { skipSound: true });
+            });
+            arrow.hitCount += hitNow.length;
+          }
+
+          if (this.isArrowOutOfBounds(arrow)) {
+            this.activeArrows.splice(i, 1);
+          }
+        }
+
+        const limit = this.getConcurrentArrowLimit();
+        const occupied = this.activeArrows.length + this.arrowWarnings.length;
+        if (now >= this.nextHazardAt) {
+          if (occupied < limit) {
+            this.triggerArrowWarning(now);
+            const occupiedAfter = this.activeArrows.length + this.arrowWarnings.length;
+            this.scheduleNextHazard(now, occupiedAfter < limit);
+          } else {
+            this.nextHazardAt = now + 120;
+          }
+        }
+      }
+
+      handleCollision(x, y, intensity) {
+        if (intensity > 0.2) {
+          this.particles.emitCollision(x, y, intensity);
+          this.audio.playCollisionSound(intensity);
+        }
+        if (intensity > 0.54) {
+          this.screenShake = Math.max(this.screenShake, intensity * 5.8);
+        }
+      }
+
+      async declareWinner(flag) {
+        if (!flag || this.roundManager.state !== "running") {
+          return;
+        }
+        this.roundManager.setWinner();
+        this.phase = "WINNER";
+        this.winner = flag;
+        this.lastWinnerFlag = flag.country.flag;
+        this.nextHazardAt = Infinity;
+        this.arrowWarnings = [];
+        this.activeArrows = [];
+        this.shieldPowerup = null;
+        this.nextShieldAt = Infinity;
+        this.freezePhysicsAt = performance.now() + 1200;
+        this.audio.playWinnerSound();
+        this.dom.winnerFlag.textContent = flag.country.flag;
+        this.dom.winnerName.textContent = flag.country.name.toUpperCase();
+        this.dom.winnerOverlay.classList.remove("hidden");
+        this.updateHud();
+
+        await this.voice.speakNow("And we have a winner!", {
+          interrupt: true,
+          priority: VOICE_PRIORITY.WINNER,
+          rate: 0.9,
+          pitch: 0.92
+        });
+        await sleep(460);
+        await this.voice.speakNow(`${flag.country.name} wins the Flag Battle!`, {
+          priority: VOICE_PRIORITY.WINNER,
+          interrupt: true,
+          rate: 0.93,
+          pitch: 0.94
+        });
+
+        if (ROUND_CONFIG.autoNextRound) {
+          const jitter = this.rng.range(-1000, 1000);
+          const delay = clamp(ROUND_CONFIG.winnerDisplayMs + jitter, 5000, 7000);
+          setTimeout(() => {
+            if (this.roundManager.state === "winner" && !this.roundManager.isBusy) {
+              this.roundManager.startRound();
+            }
+          }, delay);
+        }
+      }
+
+      applyViewerAction(payload) {
+        if (!payload || !payload.country) {
+          return false;
+        }
+        const query = String(payload.country).trim().toLowerCase();
+        const target = this.flags.find((flag) => {
+          if (!flag.alive) return false;
+          return flag.country.id === query || flag.country.name.toLowerCase() === query;
+        });
+        if (!target) {
+          return false;
+        }
+        const action = String(payload.action || "boost").toLowerCase();
+        if (action === "boost") {
+          const toCenterX = this.arena.x - target.x;
+          const toCenterY = this.arena.y - target.y;
+          const len = Math.hypot(toCenterX, toCenterY) || 1;
+          const nx = toCenterX / len;
+          const ny = toCenterY / len;
+          const boost = 100 + this.rng.range(0, 140);
+          target.vx += nx * boost + this.rng.range(-35, 35);
+          target.vy += ny * boost + this.rng.range(-35, 35);
+          target.supportGlow = 1;
+          this.particles.emitCollision(target.x, target.y, 0.8);
+          return true;
+        }
+        return false;
+      }
+
+      addSupport(country) {
+        return this.applyViewerAction({ country, action: "boost" });
+      }
+
+      update(dt, now) {
+        const shouldRunPhysics = this.roundManager.state === "running"
+          || (this.roundManager.state === "winner" && now < this.freezePhysicsAt);
+
+        if (shouldRunPhysics) {
+          this.physics.update(this, dt);
+        }
+
+        if (this.roundManager.state === "running") {
+          this.updateHazards(dt, now);
+          this.updatePowerups(now);
+        }
+
+        for (let i = this.eliminationGhosts.length - 1; i >= 0; i -= 1) {
+          const ghost = this.eliminationGhosts[i];
+          ghost.life -= dt;
+          if (ghost.life <= 0) {
+            this.eliminationGhosts.splice(i, 1);
+          }
+        }
+
+        for (let i = this.shockwaves.length - 1; i >= 0; i -= 1) {
+          const wave = this.shockwaves[i];
+          wave.life -= dt;
+          if (wave.life <= 0) {
+            this.shockwaves.splice(i, 1);
+          }
+        }
+
+        if (this.roundManager.state === "winner" && this.winner && this.winner.alive && Math.random() < 0.35) {
+          this.particles.emitWinnerAura(this.winner.x, this.winner.y);
+        }
+
+        this.particles.update(dt);
+        this.screenShake *= 0.9;
+        if (this.screenShake < 0.01) {
+          this.screenShake = 0;
+        }
+
+        const alive = this.getAliveCount();
+        if (alive !== this.lastAliveCount) {
+          this.lastAliveCount = alive;
+          this.updatePhase();
+          this.updateHud();
+          if (alive === 1 && this.roundManager.state === "running") {
+            this.declareWinner(this.getAliveFlags()[0]);
+          }
+        } else if (this.roundManager.state !== "running") {
+          this.updateHud();
+        }
+
+        this.renderer.render(dt, now);
+      }
+
+      loop(now) {
+        const dt = Math.min(0.033, Math.max(0.001, (now - this.lastFrame) / 1000));
+        this.lastFrame = now;
+        this.update(dt, now);
+        requestAnimationFrame(this.loop);
+      }
+    }
+
+    const game = new Game();
+    window.game = game;
+    window.setSeed = (seed) => game.setSeed(seed);
+
+    const params = new URLSearchParams(window.location.search);
+    const STREAM_MODE = params.get("stream") === "1";
+    const AUTOSTART = params.get("autostart") === "1";
+
+    console.log("[FLAG BATTLE] Page initialized");
+    console.log("[FLAG BATTLE] Stream mode:", STREAM_MODE);
+    console.log("[FLAG BATTLE] Autostart:", AUTOSTART);
+
+    let autoStartTriggered = false;
+
+    async function autoStartGame() {
+      if (autoStartTriggered) {
+        return;
+      }
+      if (game.roundManager.isBusy) {
+        return;
+      }
+      if (game.roundManager.state !== "menu") {
+        return;
+      }
+
+      autoStartTriggered = true;
+
+      console.log("[FLAG BATTLE] Auto-start triggered");
+
+      try {
+        game.audio.ensureContext();
+      } catch (error) {
+        console.warn("[FLAG BATTLE] Audio initialization failed:", error);
+      }
+
+      try {
+        if (game.voice && typeof game.voice.prepareForStream === "function") {
+          const prep = game.voice.prepareForStream();
+          if (prep && typeof prep.catch === "function") {
+            prep.catch((error) => {
+              console.warn("[FLAG BATTLE] Voice initialization failed:", error);
+            });
+          }
+        }
+      } catch (error) {
+        console.warn("[FLAG BATTLE] Voice initialization failed:", error);
+      }
+
+      try {
+        console.log(
+          "[FLAG BATTLE] Starting automatic round. Current state:",
+          game.roundManager.state
+        );
+        await game.roundManager.startRound();
+        console.log(
+          "[FLAG BATTLE] Automatic round started. New state:",
+          game.roundManager.state
+        );
+        console.log("[FLAG BATTLE] Auto-start completed");
+      } catch (error) {
+        console.error("[FLAG BATTLE] Auto-start failed:", error);
+        autoStartTriggered = false;
+        return;
+      }
+
+      if (game.roundManager.state === "menu") {
+        autoStartTriggered = false;
+      }
+    }
+
+    if (STREAM_MODE) {
+      document.body.classList.add("stream-mode");
+    }
+
+    if (AUTOSTART) {
+      document.body.classList.add("autostart-mode");
+
+      const bootAutoStart = () => {
+        console.log("[FLAG BATTLE] Autostart URL detected");
+        setTimeout(() => {
+          autoStartGame();
+        }, 300);
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootAutoStart, { once: true });
+      } else {
+        bootAutoStart();
+      }
+    }
+  </script>
+</body>
+</html>
